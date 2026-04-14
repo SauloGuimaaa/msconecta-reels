@@ -89,51 +89,38 @@ async function main() {
   // 3. Enviar para Claude com visão
   const client = new Anthropic.default();
 
-  const prompt = `Você é um diretor de arte analisando um frame de vídeo vertical 9:16 (1080×1920px) para posicionar blocos gráficos sobrepostos.
+  const prompt = `Você é um diretor de arte analisando um frame de vídeo vertical 9:16 (1080×1920px).
+
+## Contexto
+
+Os blocos de título MSConecta SEMPRE ficam na parte inferior do frame ("bottom-left"), alinhados à esquerda e ocupando toda a largura. Eles têm ~300–500px de altura e partem de ~80px do rodapé subindo.
+
+O único parâmetro que você controla é o \`verticalOffset\`: um número positivo que SOBE os blocos em relação à posição padrão do rodapé. Intervalo válido: 0 a 400.
 
 ## Sua tarefa
 
-Analise TODAS as regiões do frame e identifique:
-1. Texto sobreposto no vídeo original (legendas, títulos do criador, créditos, marcas d'água)
-2. Rostos ou pessoas em destaque
-3. Objetos ou elementos visuais principais da cena
-4. Regiões com fundo limpo e disponíveis para sobreposição
+Analise a parte INFERIOR do frame (aproximadamente os 600px inferiores, ou seja, do meio para baixo) e identifique:
+1. Há texto sobreposto no vídeo original nessa região? (legendas, nome do criador, créditos, hashtags, emojis de texto)
+2. Se sim, qual a altura aproximada que esse texto ocupa a partir do rodapé?
 
-## O que será sobreposto
+## Regras para calcular o verticalOffset
 
-Os blocos MSConecta ocupam aproximadamente 300–500px de altura e toda a largura (left: 0, right: 0). Eles serão posicionados em:
-- "bottom-left" → região inferior do frame (a partir de ~80px do rodapé, subindo)
-- "top-left"    → região superior do frame (a partir de ~100px do topo, descendo)
-- "center"      → região central (usar apenas se ambas as pontas estiverem livres e o centro também)
+- Parte inferior LIMPA (sem texto original) → offset entre 0 e 100
+- Texto pequeno no rodapé (ocupa ~100–200px a partir do rodapé, ex: legenda curta) → offset entre 150 e 250
+- Texto médio no rodapé (ocupa ~200–350px a partir do rodapé, ex: legenda longa, nome + legenda) → offset entre 250 e 350
+- Texto grande / ocupa até o centro (ocupa mais de 350px, ex: múltiplas linhas de texto) → offset entre 350 e 400
 
-O \`verticalOffset\` desloca os blocos adicionalmente: positivo sobe, negativo desce (intervalo: −200 a 400).
-
-## Regra principal
-
-Os blocos de título NUNCA devem sobrepor:
-- Texto original do vídeo (legendas, títulos, créditos)
-- Rostos em destaque ou expressões faciais importantes
-- Elementos visuais centrais da cena
-
-## Exemplos de decisão
-
-- Texto na parte inferior (legenda, rodapé do criador) → "top-left", offset 0
-- Texto na parte superior (título do post, cabeçalho) → "bottom-left", offset 0 a 100
-- Texto em ambas as partes → analise qual lado tem MENOS conteúdo importante e use esse lado; offset conforme o espaço livre
-- Rosto centralizado na parte inferior → "top-left", offset 0
-- Rosto na parte superior → "bottom-left", offset 0
-- Conteúdo central importante → NUNCA use "center"; escolha top-left ou bottom-left
-- Frame com fundo limpo em toda parte inferior → "bottom-left", offset 0
+O objetivo é que os blocos MSConecta fiquem ACIMA do texto original, sem sobreposição.
 
 ## Resposta
 
 Responda APENAS com JSON válido, sem markdown, sem bloco de código, sem explicação fora do JSON:
 
 {
-  "position": "bottom-left | top-left | center",
-  "verticalOffset": número entre -200 e 400,
-  "reasoning": "explicação concisa de por que escolheu essa posição e offset",
-  "occupiedRegions": ["lista das regiões identificadas como ocupadas, ex: 'texto de legenda na parte inferior', 'rosto em destaque no centro'"]
+  "position": "bottom-left",
+  "verticalOffset": número entre 0 e 400,
+  "reasoning": "explicação concisa sobre o que foi encontrado na parte inferior e por que escolheu esse offset",
+  "occupiedRegions": ["lista das regiões com texto/elementos identificados na parte inferior, ou vazio se limpa"]
 }`;
 
   console.error('[analyze] Enviando frame para Claude...');
@@ -194,10 +181,9 @@ Responda APENAS com JSON válido, sem markdown, sem bloco de código, sem explic
   }
 
   // Validar e normalizar campos
-  const validPositions = ['bottom-left', 'top-left', 'center'];
-  if (!validPositions.includes(result.position)) result.position = 'bottom-left';
+  result.position = 'bottom-left'; // posição sempre fixa
   if (typeof result.verticalOffset !== 'number') result.verticalOffset = 0;
-  result.verticalOffset = Math.max(-200, Math.min(400, result.verticalOffset));
+  result.verticalOffset = Math.max(0, Math.min(400, result.verticalOffset));
   if (typeof result.reasoning !== 'string') result.reasoning = '';
   if (!Array.isArray(result.occupiedRegions)) result.occupiedRegions = [];
 

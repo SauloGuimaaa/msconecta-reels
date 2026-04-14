@@ -295,36 +295,30 @@ export const RemotionRoot: React.FC = () => {
 > A lógica abaixo é executada automaticamente por `scripts/analyze-frame.js` (Claude Vision).
 > O script retorna `position`, `verticalOffset`, `reasoning` e `occupiedRegions`.
 
-### Prioridade de análise
+### Regra fixa
 
-O script identifica **todas** as regiões ocupadas no frame antes de decidir a posição:
-1. Texto sobreposto no vídeo original (legendas, títulos do criador, créditos, marcas d'água)
-2. Rostos ou pessoas em destaque
-3. Objetos ou elementos visuais principais da cena
-4. Regiões com fundo limpo disponíveis
+`position` é **sempre `"bottom-left"`** — os blocos de título ficam invariavelmente na parte inferior.
+O único parâmetro que varia é o `verticalOffset`, calculado pela análise da parte inferior do frame.
 
-### Regras de posicionamento
+### Regras de verticalOffset
 
 ```
-Texto na parte INFERIOR (legenda, rodapé)     → 'top-left',    offset 0
-Texto na parte SUPERIOR (título, cabeçalho)   → 'bottom-left', offset 0–100
-Texto em AMBAS as partes                      → lado com MENOS conteúdo, offset conforme espaço
-Rosto em destaque na parte INFERIOR           → 'top-left',    offset 0
-Rosto em destaque na parte SUPERIOR           → 'bottom-left', offset 0
-Conteúdo CENTRAL importante                   → NUNCA 'center'; escolher top-left ou bottom-left
-Frame com fundo limpo na parte inferior       → 'bottom-left', offset 0  (padrão)
+Parte inferior LIMPA (sem texto original)                   → offset  0–100
+Texto pequeno no rodapé (~100–200px, ex: legenda curta)    → offset 150–250
+Texto médio no rodapé  (~200–350px, ex: nome + legenda)    → offset 250–350
+Texto grande / até o centro (350px+, múltiplas linhas)     → offset 350–400
 ```
 
-Os blocos de título **nunca** devem sobrepor texto original, rostos em destaque ou elementos visuais centrais.
+O objetivo é que os blocos MSConecta fiquem **acima** do texto original sem sobreposição.
 
 ### Output do script (JSON enriquecido)
 
 ```json
 {
-  "position": "bottom-left | top-left | center",
-  "verticalOffset": 0,
-  "reasoning": "Explicação concisa da decisão tomada",
-  "occupiedRegions": ["legenda na parte inferior", "rosto no centro-superior"]
+  "position": "bottom-left",
+  "verticalOffset": 200,
+  "reasoning": "Legenda de duas linhas ocupa ~250px no rodapé; offset 200 posiciona os blocos acima.",
+  "occupiedRegions": ["legenda de duas linhas na parte inferior"]
 }
 ```
 
