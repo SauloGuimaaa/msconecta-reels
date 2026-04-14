@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "ES2022"],
+    "module": "commonjs",
+    "jsx": "react",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "skipLibCheck": true
+  },
+  "include": ["src", "remotion.config.ts"]
+}
