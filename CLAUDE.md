@@ -294,6 +294,7 @@ export const RemotionRoot: React.FC = () => {
 
 > A lógica abaixo é executada automaticamente por `scripts/analyze-frame.js` (Claude Vision).
 > O script retorna `position`, `verticalOffset`, `reasoning` e `occupiedRegions`.
+> **Modelo:** `claude-haiku-4-5-20251001` (trocado de `claude-opus-4-6` em 2026-04 para reduzir custos de API)
 
 ### Regra fixa
 

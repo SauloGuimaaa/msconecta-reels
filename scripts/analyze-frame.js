@@ -126,7 +126,7 @@ Responda APENAS com JSON válido, sem markdown, sem bloco de código, sem explic
   console.error('[analyze] Enviando frame para Claude...');
 
   const response = await client.messages.create({
-    model: 'claude-opus-4-6',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 512,
     messages: [
       {
