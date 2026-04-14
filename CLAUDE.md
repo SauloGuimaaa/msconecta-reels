@@ -292,15 +292,44 @@ export const RemotionRoot: React.FC = () => {
 
 ## Decisão de posição dos títulos
 
-Regra para o agente decidir automaticamente (ou sugerir ao operador):
+> A lógica abaixo é executada automaticamente por `scripts/analyze-frame.js` (Claude Vision).
+> O script retorna `position`, `verticalOffset`, `reasoning` e `occupiedRegions`.
+
+### Prioridade de análise
+
+O script identifica **todas** as regiões ocupadas no frame antes de decidir a posição:
+1. Texto sobreposto no vídeo original (legendas, títulos do criador, créditos, marcas d'água)
+2. Rostos ou pessoas em destaque
+3. Objetos ou elementos visuais principais da cena
+4. Regiões com fundo limpo disponíveis
+
+### Regras de posicionamento
 
 ```
-SE conteúdo principal do vídeo está na parte INFERIOR  → usar 'top-left'
-SE conteúdo principal do vídeo está na parte SUPERIOR  → usar 'bottom-left' (padrão)
-SE vídeo tem conteúdo central importante               → usar 'top-left' ou 'bottom-left' (evitar 'center')
+Texto na parte INFERIOR (legenda, rodapé)     → 'top-left',    offset 0
+Texto na parte SUPERIOR (título, cabeçalho)   → 'bottom-left', offset 0–100
+Texto em AMBAS as partes                      → lado com MENOS conteúdo, offset conforme espaço
+Rosto em destaque na parte INFERIOR           → 'top-left',    offset 0
+Rosto em destaque na parte SUPERIOR           → 'bottom-left', offset 0
+Conteúdo CENTRAL importante                   → NUNCA 'center'; escolher top-left ou bottom-left
+Frame com fundo limpo na parte inferior       → 'bottom-left', offset 0  (padrão)
 ```
 
-Variável de input para o n8n/automação:
+Os blocos de título **nunca** devem sobrepor texto original, rostos em destaque ou elementos visuais centrais.
+
+### Output do script (JSON enriquecido)
+
+```json
+{
+  "position": "bottom-left | top-left | center",
+  "verticalOffset": 0,
+  "reasoning": "Explicação concisa da decisão tomada",
+  "occupiedRegions": ["legenda na parte inferior", "rosto no centro-superior"]
+}
+```
+
+### Variável de input para o n8n/automação
+
 ```json
 {
   "videoSrc": "video_pitbull.mp4",
