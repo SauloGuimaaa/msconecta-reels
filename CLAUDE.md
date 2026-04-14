@@ -297,28 +297,29 @@ export const RemotionRoot: React.FC = () => {
 
 ### Regra fixa
 
-`position` é **sempre `"bottom-left"`** — os blocos de título ficam invariavelmente na parte inferior.
-O único parâmetro que varia é o `verticalOffset`, calculado pela análise da parte inferior do frame.
+`position` é **sempre `"bottom-left"`** — os blocos ficam o mais abaixo possível, partindo de ~80px do rodapé.
+O texto original do vídeo normalmente fica **acima** dos blocos, então coexistem sem conflito na maioria dos casos.
 
 ### Regras de verticalOffset
 
 ```
-Parte inferior LIMPA (sem texto original)                   → offset  0–100
-Texto pequeno no rodapé (~100–200px, ex: legenda curta)    → offset 150–250
-Texto médio no rodapé  (~200–350px, ex: nome + legenda)    → offset 250–350
-Texto grande / até o centro (350px+, múltiplas linhas)     → offset 350–400
+Sem texto nos últimos 400px do frame                         → offset 0  (padrão — caso mais comum)
+Texto acima da metade da tela                                → offset 0  (sem conflito)
+Texto nos últimos 400px, acima da região dos blocos          → offset 0  (blocos ficam abaixo naturalmente)
+Texto que se sobrepõe diretamente à região dos blocos        → offset 50–80 (raramente acima de 150)
+Texto cobrindo mais de 400px a partir do rodapé (raro)       → offset até 400
 ```
 
-O objetivo é que os blocos MSConecta fiquem **acima** do texto original sem sobreposição.
+Offset acima de 150 é situação excepcional.
 
 ### Output do script (JSON enriquecido)
 
 ```json
 {
   "position": "bottom-left",
-  "verticalOffset": 200,
-  "reasoning": "Legenda de duas linhas ocupa ~250px no rodapé; offset 200 posiciona os blocos acima.",
-  "occupiedRegions": ["legenda de duas linhas na parte inferior"]
+  "verticalOffset": 0,
+  "reasoning": "Parte inferior limpa; blocos ficam no rodapé padrão.",
+  "occupiedRegions": []
 }
 ```
 

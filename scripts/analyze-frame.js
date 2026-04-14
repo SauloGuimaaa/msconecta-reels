@@ -93,24 +93,24 @@ async function main() {
 
 ## Contexto
 
-Os blocos de título MSConecta SEMPRE ficam na parte inferior do frame ("bottom-left"), alinhados à esquerda e ocupando toda a largura. Eles têm ~300–500px de altura e partem de ~80px do rodapé subindo.
+Os blocos de título MSConecta SEMPRE ficam o mais abaixo possível ("bottom-left"), partindo de ~80px do rodapé e subindo ~300–500px. Esta é a posição padrão e ideal — NÃO deve ser alterada sem motivo.
 
-O único parâmetro que você controla é o \`verticalOffset\`: um número positivo que SOBE os blocos em relação à posição padrão do rodapé. Intervalo válido: 0 a 400.
+O texto original do vídeo (legendas, nome do criador, créditos) normalmente fica ACIMA dos blocos MSConecta, então coexistem sem conflito.
+
+O único parâmetro que você controla é o \`verticalOffset\`: sobe os blocos a partir do rodapé. O valor padrão é 0 e deve ser mantido na maioria dos casos.
 
 ## Sua tarefa
 
-Analise a parte INFERIOR do frame (aproximadamente os 600px inferiores, ou seja, do meio para baixo) e identifique:
-1. Há texto sobreposto no vídeo original nessa região? (legendas, nome do criador, créditos, hashtags, emojis de texto)
-2. Se sim, qual a altura aproximada que esse texto ocupa a partir do rodapé?
+Verifique se há texto sobreposto do vídeo original nos ÚLTIMOS 400px do frame (região do rodapé). Ignore qualquer texto acima da metade da tela — ele não conflita com os blocos.
 
 ## Regras para calcular o verticalOffset
 
-- Parte inferior LIMPA (sem texto original) → offset entre 0 e 100
-- Texto pequeno no rodapé (ocupa ~100–200px a partir do rodapé, ex: legenda curta) → offset entre 150 e 250
-- Texto médio no rodapé (ocupa ~200–350px a partir do rodapé, ex: legenda longa, nome + legenda) → offset entre 250 e 350
-- Texto grande / ocupa até o centro (ocupa mais de 350px, ex: múltiplas linhas de texto) → offset entre 350 e 400
+- Sem texto nos últimos 400px → offset 0 (padrão, mais comum)
+- Texto acima da metade da tela (acima dos 960px inferiores) → offset 0, sem conflito
+- Texto nos últimos 400px MAS acima de onde os blocos terminam (~500px do rodapé) → offset 0, blocos ficam abaixo do texto naturalmente
+- Texto nos últimos 400px que se sobrepõe diretamente à região dos blocos → offset mínimo necessário para separar (normalmente 50–80, raramente acima de 150)
 
-O objetivo é que os blocos MSConecta fiquem ACIMA do texto original, sem sobreposição.
+Offset acima de 150 só se justifica se o texto original cobrir mais de 400px a partir do rodapé (situação rara).
 
 ## Resposta
 
@@ -119,8 +119,8 @@ Responda APENAS com JSON válido, sem markdown, sem bloco de código, sem explic
 {
   "position": "bottom-left",
   "verticalOffset": número entre 0 e 400,
-  "reasoning": "explicação concisa sobre o que foi encontrado na parte inferior e por que escolheu esse offset",
-  "occupiedRegions": ["lista das regiões com texto/elementos identificados na parte inferior, ou vazio se limpa"]
+  "reasoning": "explicação concisa: o que foi encontrado nos últimos 400px e por que esse offset",
+  "occupiedRegions": ["texto/elementos encontrados nos últimos 400px do frame, ou vazio se limpo"]
 }`;
 
   console.error('[analyze] Enviando frame para Claude...');
@@ -183,7 +183,7 @@ Responda APENAS com JSON válido, sem markdown, sem bloco de código, sem explic
   // Validar e normalizar campos
   result.position = 'bottom-left'; // posição sempre fixa
   if (typeof result.verticalOffset !== 'number') result.verticalOffset = 0;
-  result.verticalOffset = Math.max(0, Math.min(400, result.verticalOffset));
+  result.verticalOffset = Math.max(0, Math.min(400, Math.round(result.verticalOffset)));
   if (typeof result.reasoning !== 'string') result.reasoning = '';
   if (!Array.isArray(result.occupiedRegions)) result.occupiedRegions = [];
 
